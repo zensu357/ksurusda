@@ -1,0 +1,104 @@
+name: Check Frida Updates
+
+on:
+  schedule:
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Get latest patched Frida version
+        id: frida
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          http_code=$(
+            curl -sSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -o response.json \
+              -w "%{http_code}" \
+              https://api.github.com/repos/gorkemgun/knox-frida-patcher/releases/latest
+          )
+
+          if [ "$http_code" != "200" ]; then
+            echo "Failed to fetch latest version: HTTP $http_code"
+            cat response.json
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LATEST=$(jq -r '.tag_name // empty' response.json)
+
+          if [ -z "$LATEST" ]; then
+            echo "Failed to parse latest version"
+            cat response.json
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Latest patched Frida: $LATEST"
+          fi
+
+      - name: Check current version
+        if: steps.frida.outputs.skip == 'false'
+        id: check
+        run: |
+          set -euo pipefail
+
+          CURRENT=$(grep 'fridaVersion =' module.gradle | awk -F'"' '{print $2}')
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT" = "${{ steps.frida.outputs.version }}" ]; then
+            echo "update=false" >> "$GITHUB_OUTPUT"
+            echo "Already on $CURRENT"
+          else
+            echo "update=true" >> "$GITHUB_OUTPUT"
+            echo "Update available: $CURRENT -> ${{ steps.frida.outputs.version }}"
+          fi
+
+      - name: Update Frida version and push with PAT
+        if: steps.frida.outputs.skip == 'false' && steps.check.outputs.update == 'true'
+        run: |
+          set -euo pipefail
+
+          NEW_VERSION=${{ steps.frida.outputs.version }}
+          DEFAULT_BRANCH="${GITHUB_REF_NAME}"
+
+          sed -i "s/fridaVersion = \".*\"/fridaVersion = \"${NEW_VERSION}\"/" module.gradle
+
+          CURRENT_CODE=$(grep 'moduleVersionCode =' module.gradle | awk -F'= ' '{print $2}')
+          NEW_CODE=$((CURRENT_CODE + 1))
+          sed -i "s/moduleVersionCode = ${CURRENT_CODE}/moduleVersionCode = ${NEW_CODE}/" module.gradle
+
+          CURRENT_VER=$(grep 'moduleVersion =' module.gradle | awk -F'"' '{print $2}')
+          MAJOR=$(echo "$CURRENT_VER" | cut -d. -f1-2)
+          PATCH=$(echo "$CURRENT_VER" | cut -d. -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VER="${MAJOR}.${NEW_PATCH}"
+          sed -i "s/moduleVersion = \"${CURRENT_VER}\"/moduleVersion = \"${NEW_VER}\"/" module.gradle
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add module.gradle
+          git commit -m "bump Frida to ${NEW_VERSION}"
+
+          git remote set-url origin "https://x-access-token:${{ secrets.PAT_PUSH_TOKEN }}@github.com/${{ github.repository }}.git"
+
+          git push origin "HEAD:${DEFAULT_BRANCH}"
+          git tag "$NEW_VER"
+          git push origin "refs/tags/${NEW_VER}"

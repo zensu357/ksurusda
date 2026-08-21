@@ -1,0 +1,22 @@
+name: lint
+on:
+  - push
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.x
+      - run: pip3 install cpplint
+      - name: Run cpplint
+        run: >
+          cpplint
+          --linelength=120
+          --filter=-build/c++11,-build/header_guard,-legal/copyright,-build/include_subdir
+          --exclude module/src/jni/include/rapidjson
+          --exclude module/src/jni/xdl
+          --exclude module/src/jni/zygisk.h
+          --recursive .

@@ -1,0 +1,81 @@
+name: CI-Build
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Module
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: gradle
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :module:assembleRelease
+
+      - name: Get Module Info
+        id: module-version
+        run: |
+          MODULE_VERSION=$(grep 'moduleVersion =' module.gradle | awk -F'"' '{print $2}')
+          MODULE_VERSION_CODE=$(grep 'moduleVersionCode =' module.gradle | awk -F'= ' '{print $2}')
+          echo "version=$MODULE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "versionCode=$MODULE_VERSION_CODE" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: KsuFrida-${{ steps.module-version.outputs.version }}-release
+          path: out/magisk_module_zygisk_release
+
+      - name: Create Release ZIP
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd out/magisk_module_zygisk_release
+          zip -r ../KsuFrida-${{ steps.module-version.outputs.version }}.zip .
+
+      - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KsuFrida ${{ steps.module-version.outputs.version }}
+          generate_release_notes: true
+          files: out/KsuFrida-${{ steps.module-version.outputs.version }}.zip
+
+      - name: Update update.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+
+          VERSION=${{ steps.module-version.outputs.version }}
+          VERSION_CODE=${{ steps.module-version.outputs.versionCode }}
+
+          printf '{\n    "version": "%s",\n    "versionCode": %s,\n    "zipUrl": "https://github.com/gorkemgun/ksu-frida/releases/download/%s/KsuFrida-%s.zip",\n    "changelog": "https://raw.githubusercontent.com/gorkemgun/ksu-frida/main/changelog.md"\n}\n' "$VERSION" "$VERSION_CODE" "$VERSION" "$VERSION" > update.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout main
+          git add update.json
+          git commit -m "update update.json for ${VERSION}" || exit 0
+
+          git remote set-url origin "https://x-access-token:${{ secrets.PAT_PUSH_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push origin HEAD:main

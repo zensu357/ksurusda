@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KsuFrida Manager</title>
+    <style>
+        :root {
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --primary-glow: rgba(56, 189, 248, 0.15);
+            --danger: #f43f5e;
+            --danger-hover: #e11d48;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-base: #0b0f19;
+            --surface: #131b2e;
+            --surface-hover: #18223a;
+            --surface-card: #162035;
+            --surface-inner: #0f1626;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(56, 189, 248, 0.4);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-sub: #64748b;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            --font-mono: "Fira Code", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding: 16px 12px 90px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 580px;
+        }
+
+        /* ── Header ─────────────────────────────────────────── */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 8px 4px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 20px;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+        }
+
+        .brand-title h1 {
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Card ───────────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .badge-count {
+            background: var(--surface-inner);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        /* ── Buttons ────────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-main);
+            background: var(--surface-inner);
+            border: 1px solid var(--border);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .btn:hover {
+            background: var(--surface-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #0b0f19;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 2px 10px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            color: #0b0f19;
+        }
+
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.12);
+            color: #fb7185;
+            border-color: rgba(244, 63, 94, 0.25);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-warning {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-warning:hover {
+            background: var(--warning);
+            color: #111;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+        }
+
+        /* ── Target Items ───────────────────────────────────── */
+        .target-item {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .target-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .target-item.disabled {
+            opacity: 0.65;
+        }
+
+        .target-head {
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-card);
+            cursor: pointer;
+        }
+
+        .target-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .app-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--primary);
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .app-text {
+            min-width: 0;
+        }
+
+        .app-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .app-pkg {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .target-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .target-body {
+            padding: 12px 14px 14px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-inner);
+        }
+
+        .field-group {
+            margin-top: 10px;
+        }
+
+        .field-group:first-child {
+            margin-top: 0;
+        }
+
+        .field-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .field-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 3px;
+        }
+
+        /* ── Inputs ─────────────────────────────────────────── */
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-card);
+            color: var(--text-main);
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        textarea {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            resize: vertical;
+            min-height: 52px;
+            line-height: 1.5;
+        }
+
+        /* ── Switch ─────────────────────────────────────────── */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #334155;
+            border-radius: 24px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slider:before {
+            content: "";
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        input:checked + .slider {
+            background: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        /* ── Nested Sub-Panel ───────────────────────────────── */
+        .sub-panel {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            margin-top: 10px;
+        }
+
+        .row-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ── Mode Tabs ───────────────────────────────────────── */
+        .mode-tabs {
+            display: flex;
+            background: var(--surface-inner);
+            padding: 3px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+            gap: 4px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            text-align: center;
+            padding: 7px 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .mode-tab:hover {
+            color: var(--text-main);
+        }
+
+        .mode-tab.active {
+            background: var(--surface-card);
+            color: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .mode-content {
+            display: none;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        /* ── Gadget Editor ──────────────────────────────────── */
+        .editor-container {
+            position: relative;
+        }
+
+        #gadget-editor, #script-editor {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            background: #090d16;
+            color: #38bdf8;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            min-height: 100px;
+        }
+
+        #script-editor {
+            color: #10b981;
+            min-height: 120px;
+        }
+
+        .status-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-dot::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .status-ok { color: var(--success); }
+        .status-ok::before { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+        .status-err { color: var(--danger); }
+        .status-err::before { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+
+        /* ── Bottom Floating Action Bar ─────────────────────── */
+        .floating-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: center;
+            z-index: 99;
+        }
+
+        .floating-bar-inner {
+            width: 100%;
+            max-width: 580px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .floating-bar .btn {
+            flex: 1;
+            padding: 11px;
+            font-size: 14px;
+        }
+
+        /* ── Modal ──────────────────────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 480px;
+            max-height: 80vh;
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .modal-head h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            flex: 1;
+            margin-top: 12px;
+            padding-right: 4px;
+        }
+
+        .app-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .app-row:hover {
+            background: var(--surface-card);
+        }
+
+        .app-row:active {
+            background: var(--surface-hover);
+        }
+
+        .empty {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 32px 0;
+            font-size: 13px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(12px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-box">KF</div>
+                <div class="brand-title">
+                    <h1 data-i18n="appTitle">KsuFrida 注入管理</h1>
+                    <p data-i18n="appSubtitle">Zygisk Frida Gadget 动态注入与隐蔽框架</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-sm" id="btn-help" title="Help & Documentation" data-i18n="btnHelp">📖 详解</button>
+                <button class="btn btn-sm" id="btn-lang-toggle" title="Switch Language">EN / 中</button>
+            </div>
+        </header>
+
+        <!-- Targets Section -->
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h2 class="card-title" data-i18n="targetsTitle">注入目标列表</h2>
+                    <span class="badge-count" id="targets-count">0</span>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-add">
+                    <span>+</span> <span data-i18n="btnAddTarget">添加应用</span>
+                </button>
+            </div>
+            <div id="targets"></div>
+        </section>
+
+        <!-- Gadget Configuration Section with Interactive Multi-Mode -->
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h2 class="card-title" data-i18n="gadgetConfigTitle">Frida Gadget 交互模式</h2>
+                    <span class="status-dot status-ok" id="gadget-status">Ready</span>
+                </div>
+            </div>
+
+            <!-- Mode Selector Tabs -->
+            <div class="mode-tabs">
+                <div class="mode-tab active" id="tab-listen" onclick="switchGadgetMode('listen')">
+                    <span data-i18n="tabListen">🌐 联网监听模式</span>
+                </div>
+                <div class="mode-tab" id="tab-script" onclick="switchGadgetMode('script')">
+                    <span data-i18n="tabScript">⚡ 离线免联网脚本模式</span>
+                </div>
+                <div class="mode-tab" id="tab-raw" onclick="switchGadgetMode('raw')">
+                    <span data-i18n="tabRaw">📝 高级 JSON</span>
+                </div>
+            </div>
+
+            <!-- Listen Mode Panel -->
+            <div class="mode-content active" id="panel-listen">
+                <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; color:var(--text-muted);">
+                    <span data-i18n="listenModeDesc">适用于拥有网络权限的常规应用。Gadget 在指定端口启动 TCP 监听，供电脑端 Frida 连接。</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div class="field-group">
+                        <div class="field-label"><span data-i18n="lblPort">监听端口 (Port)</span></div>
+                        <input type="number" id="listen-port" value="27042" onchange="updateListenConfig()">
+                    </div>
+                    <div class="field-group">
+                        <div class="field-label"><span data-i18n="lblAddress">绑定地址 (Address)</span></div>
+                        <select id="listen-address" onchange="updateListenConfig()">
+                            <option value="0.0.0.0">0.0.0.0 (全部接口)</option>
+                            <option value="127.0.0.1">127.0.0.1 (仅本机)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                    <button class="btn btn-sm" id="btn-copy-adb" data-i18n="btnCopyAdb">📋 复制 ADB 转发</button>
+                    <button class="btn btn-primary btn-sm" onclick="saveGadgetModeConfig()" data-i18n="btnApplyGadget">应用并保存</button>
+                </div>
+            </div>
+
+            <!-- Script Mode Panel (For No-Internet Permission Apps) -->
+            <div class="mode-content" id="panel-script">
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:12px;">
+                    <strong style="color:var(--success);" data-i18n="scriptModeNoticeTitle">🛡️ 专为无网络权限/离线应用设计</strong>
+                    <div style="margin-top:3px; color:var(--text-main);" data-i18n="scriptModeNoticeDesc">应用无需任何网络权限或开放端口，Gadget 加载时直接在进程内运行指定的本地 JS 脚本，修改脚本后支持自动热重载。</div>
+                </div>
+                <div class="field-group" style="margin-bottom:10px;">
+                    <div class="field-label"><span data-i18n="lblScriptPath">本地脚本绝对路径</span></div>
+                    <input type="text" id="script-path" value="/data/local/tmp/libsec/script.js" onchange="updateScriptConfig()">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        <span data-i18n="lblScriptContent">Frida JS 脚本代码 (直接在手机上编写)</span>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn btn-sm" style="padding:2px 8px; font-size:11px;" onclick="insertScriptTemplate('java')">+ Java Hook</button>
+                            <button class="btn btn-sm" style="padding:2px 8px; font-size:11px;" onclick="insertScriptTemplate('native')">+ Native Hook</button>
+                        </div>
+                    </div>
+                    <textarea id="script-editor" rows="6" spellcheck="false" placeholder="// 在此编写您的 Frida JS 脚本..."></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveScriptFile()" data-i18n="btnSaveScript">💾 仅存脚本</button>
+                    <button class="btn btn-success btn-sm" onclick="saveGadgetModeConfig()" data-i18n="btnApplyGadget">应用并保存</button>
+                </div>
+            </div>
+
+            <!-- Raw JSON Mode Panel -->
+            <div class="mode-content" id="panel-raw">
+                <div class="editor-container">
+                    <textarea id="gadget-editor" rows="5" spellcheck="false" placeholder="Loading..."></textarea>
+                </div>
+                <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-primary btn-sm" id="btn-save-gadget" data-i18n="btnSaveGadget">保存原始 JSON</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Floating Action Bar -->
+    <div class="floating-bar">
+        <div class="floating-bar-inner">
+            <button class="btn btn-success" id="btn-save" data-i18n="btnSaveAll">💾 保存全部配置</button>
+            <button class="btn" id="btn-reload" data-i18n="btnReload">🔄 重新加载</button>
+        </div>
+    </div>
+
+    <!-- App Selector Modal -->
+    <div class="modal-overlay" id="app-modal">
+        <div class="modal">
+            <div class="modal-head">
+                <h3 data-i18n="modalSelectApp">选择目标应用</h3>
+                <button class="btn btn-sm" id="btn-close-modal">✕</button>
+            </div>
+            <input type="text" id="app-search" placeholder="搜索应用名称或包名..." data-i18n-placeholder="searchPlaceholder">
+            <div class="modal-body" id="app-list"></div>
+        </div>
+    </div>
+
+    <!-- Help & Documentation Modal -->
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal" style="max-width: 520px; max-height: 85vh;">
+            <div class="modal-head">
+                <h3 data-i18n="helpModalTitle">📖 功能详解与使用指南</h3>
+                <button class="btn btn-sm" id="btn-close-help">✕</button>
+            </div>
+            <div class="modal-body" id="help-content" style="font-size: 13px; line-height: 1.6; color: var(--text-main);">
+                <!-- Dynamically rendered via i18n -->
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
