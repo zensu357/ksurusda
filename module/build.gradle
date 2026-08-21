@@ -13,7 +13,6 @@ apply plugin: 'com.android.library'
 apply from: file(rootProject.file('module.gradle'))
 
 dependencies {
-    implementation 'dev.rikka.ndk.thirdparty:cxx:1.2.0'
     implementation("io.github.vvb2060.ndk:dobby:1.2")
 }
 
@@ -44,7 +43,7 @@ task downloadFrida(type: Download) {
 android {
     namespace = "zygisk.frida"
     compileSdkVersion rootProject.ext.targetSdkVersion
-    ndkVersion '25.2.9519653'
+    ndkVersion '30.0.14904198'
 
     flavorDimensions += "api"
 
