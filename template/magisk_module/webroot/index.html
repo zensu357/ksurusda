@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KsuFrida Manager</title>
     <style>
         :root {
@@ -27,6 +27,7 @@
             --radius-md: 10px;
             --radius-sm: 6px;
             --font-mono: "Fira Code", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            --input-h: 36px;
         }
 
         * {
@@ -44,7 +45,7 @@
                 radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
             background-attachment: fixed;
             color: var(--text-main);
-            padding: 16px 12px 90px;
+            padding: 16px 12px calc(86px + env(safe-area-inset-bottom, 0px));
             display: flex;
             justify-content: center;
             min-height: 100vh;
@@ -52,7 +53,7 @@
 
         .container {
             width: 100%;
-            max-width: 580px;
+            max-width: 620px;
         }
 
         /* ── Header ─────────────────────────────────────────── */
@@ -60,45 +61,59 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 8px 4px;
+            margin-bottom: 18px;
+            padding: 4px 2px;
+            gap: 10px;
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            min-width: 0;
         }
 
         .logo-box {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             border-radius: 12px;
             background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 20px;
+            font-size: 19px;
             color: #fff;
             box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
+            flex-shrink: 0;
+        }
+
+        .brand-title {
+            min-width: 0;
         }
 
         .brand-title h1 {
-            font-size: 19px;
+            font-size: 18px;
             font-weight: 700;
             letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .brand-title p {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .header-actions {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         /* ── Card ───────────────────────────────────────────── */
@@ -107,7 +122,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             transition: border-color 0.2s;
         }
@@ -121,18 +136,21 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 14px;
+            gap: 8px;
         }
 
         .card-title-group {
             display: flex;
             align-items: center;
             gap: 8px;
+            min-width: 0;
         }
 
         .card-title {
             font-size: 15px;
             font-weight: 600;
             color: var(--text-main);
+            white-space: nowrap;
         }
 
         .badge-count {
@@ -153,7 +171,8 @@
             gap: 6px;
             border: none;
             border-radius: var(--radius-md);
-            padding: 8px 14px;
+            padding: 0 14px;
+            height: var(--input-h);
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -162,6 +181,7 @@
             border: 1px solid var(--border);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
+            line-height: normal;
         }
 
         .btn:hover {
@@ -174,7 +194,8 @@
         }
 
         .btn-sm {
-            padding: 5px 10px;
+            height: 30px;
+            padding: 0 10px;
             font-size: 12px;
             border-radius: var(--radius-sm);
         }
@@ -227,7 +248,7 @@
             background: var(--surface-card);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             overflow: hidden;
             transition: all 0.2s ease;
         }
@@ -241,19 +262,21 @@
         }
 
         .target-head {
-            padding: 12px 14px;
+            padding: 10px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--surface-card);
             cursor: pointer;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .target-info {
             display: flex;
             align-items: center;
             gap: 10px;
-            flex: 1;
+            flex: 1 1 200px;
             min-width: 0;
         }
 
@@ -274,10 +297,11 @@
 
         .app-text {
             min-width: 0;
+            flex: 1;
         }
 
         .app-name {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
             color: var(--text-main);
             white-space: nowrap;
@@ -300,6 +324,7 @@
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
+            margin-left: auto;
         }
 
         .target-body {
@@ -338,7 +363,8 @@
         select,
         textarea {
             width: 100%;
-            padding: 8px 10px;
+            height: var(--input-h);
+            padding: 0 10px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             background: var(--surface-card);
@@ -347,6 +373,17 @@
             font-family: inherit;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 10px) center;
+            padding-right: 28px;
+            cursor: pointer;
         }
 
         input[type="text"]:focus,
@@ -358,6 +395,8 @@
         }
 
         textarea {
+            height: auto;
+            padding: 8px 10px;
             font-family: var(--font-mono);
             font-size: 12px;
             resize: vertical;
@@ -439,7 +478,7 @@
         .mode-tab {
             flex: 1;
             text-align: center;
-            padding: 7px 8px;
+            padding: 7px 6px;
             font-size: 12px;
             font-weight: 500;
             color: var(--text-muted);
@@ -447,6 +486,7 @@
             cursor: pointer;
             transition: all 0.2s;
             user-select: none;
+            white-space: nowrap;
         }
 
         .mode-tab:hover {
@@ -466,6 +506,14 @@
 
         .mode-content.active {
             display: block;
+        }
+
+        /* ── Responsive Form Grids ──────────────────────────── */
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
         /* ── Gadget Editor ──────────────────────────────────── */
@@ -516,11 +564,11 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(11, 15, 25, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-top: 1px solid var(--border);
-            padding: 12px 16px;
+            padding: 10px 16px max(12px, env(safe-area-inset-bottom, 12px));
             display: flex;
             justify-content: center;
             z-index: 99;
@@ -528,14 +576,14 @@
 
         .floating-bar-inner {
             width: 100%;
-            max-width: 580px;
+            max-width: 620px;
             display: flex;
             gap: 10px;
         }
 
         .floating-bar .btn {
             flex: 1;
-            padding: 11px;
+            height: 42px;
             font-size: 14px;
         }
 
@@ -559,7 +607,7 @@
             border: 1px solid var(--border);
             width: 100%;
             max-width: 480px;
-            max-height: 80vh;
+            max-height: min(85vh, 720px);
             border-radius: var(--radius-lg);
             padding: 18px;
             display: flex;
@@ -591,7 +639,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 8px;
+            padding: 9px 8px;
             border-bottom: 1px solid var(--border);
             border-radius: var(--radius-sm);
             cursor: pointer;
@@ -613,6 +661,21 @@
             font-size: 13px;
         }
 
+        /* ── Spinner ────────────────────────────────────────── */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2.5px solid rgba(56, 189, 248, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -621,6 +684,16 @@
         @keyframes slideUp {
             from { transform: translateY(12px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ── Media Queries for Small / Large Screens ────────── */
+        @media (max-width: 400px) {
+            body { padding: 12px 8px calc(80px + env(safe-area-inset-bottom, 0px)); }
+            .card { padding: 12px; }
+            .target-head { padding: 8px 10px; }
+            .target-info { flex: 1 1 100%; margin-bottom: 4px; }
+            .target-actions { width: 100%; justify-content: flex-end; }
+            .mode-tab { font-size: 11px; padding: 6px 3px; }
         }
     </style>
 </head>
@@ -682,7 +755,7 @@
                 <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; color:var(--text-muted);">
                     <span data-i18n="listenModeDesc">适用于拥有网络权限的常规应用。Gadget 在指定端口启动 TCP 监听，供电脑端 Frida 连接。</span>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div class="form-grid-2">
                     <div class="field-group">
                         <div class="field-label"><span data-i18n="lblPort">监听端口 (Port)</span></div>
                         <input type="number" id="listen-port" value="27042" onchange="updateListenConfig()">
