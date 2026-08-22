@@ -80,7 +80,7 @@ void remap_lib(std::string lib_path) {
 
     LOGI("Remapping %s (%zu segments)", lib_name.c_str(), maps.size());
 
-    long page_size_conf = sysconf(_SC_PAGESIZE);
+    int64_t page_size_conf = sysconf(_SC_PAGESIZE);
     size_t page_size = (page_size_conf > 0) ? static_cast<size_t>(page_size_conf) : 4096;
 
     for (const auto &info : maps) {
