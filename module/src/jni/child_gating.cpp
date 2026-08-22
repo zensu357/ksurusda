@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <csignal>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
