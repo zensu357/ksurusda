@@ -334,34 +334,114 @@ function exec(cmd) {
     });
 }
 
-// ── Config I/O (Base64 Safe Encoding) ─────────────────────────────────────────
+// ── Atomic & Reliable File Writer ────────────────────────────────────────────
+async function writeTextFile(filePath, content, mode = "644") {
+    var b64 = utf8ToBase64(content);
+    var dir = filePath.substring(0, filePath.lastIndexOf("/"));
+    var tmpFile = filePath + ".tmp_" + Date.now();
+
+    // 确保目录存在 -> 解码到临时文件 -> 验证非空 -> 原子重命名替换 -> 赋权
+    var cmd = 
+        "mkdir -p " + dir + " && " +
+        "(echo '" + b64 + "' | base64 -d > \"" + tmpFile + "\" 2>/dev/null || " +
+        "echo '" + b64 + "' | busybox base64 -d > \"" + tmpFile + "\" 2>/dev/null || " +
+        "toybox base64 -d <<< '" + b64 + "' > \"" + tmpFile + "\" 2>/dev/null) && " +
+        "[ -s \"" + tmpFile + "\" ] && mv -f \"" + tmpFile + "\" \"" + filePath + "\" && chmod " + mode + " \"" + filePath + "\"";
+
+    var r = await exec(cmd);
+    if (r.errno !== 0) {
+        // Fallback: 如果 base64 均不可用，使用 printf 直接安全写入
+        var safe = content.replace(/\\/g, "\\\\").replace(/'/g, "'\\''");
+        var r2 = await exec("printf '%s' '" + safe + "' > \"" + filePath + "\" && chmod " + mode + " \"" + filePath + "\"");
+        return r2.errno === 0;
+    }
+    return true;
+}
+
+// ── Config I/O ───────────────────────────────────────────────────────────────
 async function loadConfig() {
     var r = await exec("cat " + CONFIG_PATH);
     if (r.errno === 0 && r.stdout.trim().length > 0) {
         try {
             config = JSON.parse(r.stdout);
-        } catch (e) {
-            ksu.toast("Config parse error: " + e.message);
+            renderTargets();
             return;
+        } catch (e) {
+            console.error("Config JSON parse error:", e);
         }
-    } else {
-        var ex = await exec("cat /data/local/tmp/libsec/config.json.example");
-        if (ex.errno === 0) {
-            try { config = JSON.parse(ex.stdout); } catch (_) {}
-        }
+    }
+
+    // 仅在主配置文件不存在且未加载过时尝试读取样例
+    var ex = await exec("cat /data/local/tmp/libsec/config.json.example");
+    if (ex.errno === 0 && ex.stdout.trim().length > 0) {
+        try { config = JSON.parse(ex.stdout); } catch (_) {}
     }
     renderTargets();
 }
 
-async function saveConfig() {
-    var json = JSON.stringify(config, null, 4);
-    var b64 = utf8ToBase64(json);
-    var r = await exec("echo '" + b64 + "' | base64 -d > " + CONFIG_PATH + " && chmod 644 " + CONFIG_PATH);
-    if (r.errno === 0) {
-        ksu.toast(t("toastConfigSaved"));
-    } else {
-        ksu.toast("Save failed: " + r.stderr);
+// 收集并持久化所有配置 (目标配置 + Gadget 模式 + 脚本内容)
+async function saveAllConfig() {
+    // 1. 同步 DOM 中所有目标卡片的最新输入值
+    collectDOMTargetInputs();
+
+    // 2. 根据当前模式同步 Gadget 配置与脚本
+    if (currentGadgetMode === "listen") {
+        updateListenConfig();
+    } else if (currentGadgetMode === "script") {
+        updateScriptConfig();
     }
+
+    // 3. 写入 config.json
+    var targetJson = JSON.stringify(config, null, 4);
+    var ok1 = await writeTextFile(CONFIG_PATH, targetJson, "644");
+
+    // 4. 写入 libsecmon.config.so (Gadget 配置)
+    var gadgetJson = document.getElementById("gadget-editor").value;
+    var ok2 = await writeTextFile(GADGET_CONFIG_PATH, gadgetJson, "644");
+
+    // 5. 如果处于离线脚本模式，同步写入 script.js
+    var ok3 = true;
+    if (currentGadgetMode === "script") {
+        var scriptPath = document.getElementById("script-path").value || DEFAULT_SCRIPT_PATH;
+        var scriptCode = document.getElementById("script-editor").value;
+        ok3 = await writeTextFile(scriptPath, scriptCode, "666");
+    }
+
+    if (ok1 && ok2 && ok3) {
+        ksu.toast(t("toastConfigSaved"));
+        var status = document.getElementById("gadget-status");
+        if (status) {
+            status.className = "status-dot status-ok";
+            status.textContent = "Ready";
+        }
+    } else {
+        ksu.toast("⚠️ 保存遇到问题，请检查存储权限");
+    }
+}
+
+// 强制从 DOM 输入控件收集目标项字段
+function collectDOMTargetInputs() {
+    if (!config.targets) return;
+    config.targets.forEach(function (tItem, i) {
+        var body = document.getElementById("target-body-" + i);
+        if (!body) return;
+
+        var delayInput = body.querySelector("input[type='number']");
+        if (delayInput) tItem.start_up_delay_ms = parseInt(delayInput.value) || 0;
+
+        var textareas = body.querySelectorAll("textarea");
+        if (textareas.length > 0 && textareas[0]) {
+            tItem.injected_libraries = textareas[0].value.split("\n")
+                .filter(function (l) { return l.trim() !== ""; })
+                .map(function (l) { return { path: l.trim() }; });
+        }
+
+        if (tItem.child_gating && textareas.length > 1 && textareas[1]) {
+            tItem.child_gating.injected_libraries = textareas[1].value.split("\n")
+                .filter(function (l) { return l.trim() !== ""; })
+                .map(function (l) { return { path: l.trim() }; });
+        }
+    });
 }
 
 // ── Gadget Multi-Mode & Script Support ────────────────────────────────────────
@@ -438,12 +518,11 @@ async function loadScriptFile() {
 async function saveScriptFile() {
     var scriptPath = document.getElementById("script-path").value || DEFAULT_SCRIPT_PATH;
     var content = document.getElementById("script-editor").value;
-    var b64 = utf8ToBase64(content);
-    var r = await exec("echo '" + b64 + "' | base64 -d > " + scriptPath + " && chmod 666 " + scriptPath);
-    if (r.errno === 0) {
+    var ok = await writeTextFile(scriptPath, content, "666");
+    if (ok) {
         ksu.toast(t("toastScriptSaved"));
     } else {
-        ksu.toast("Script save error: " + r.stderr);
+        ksu.toast("⚠️ 脚本保存失败");
     }
 }
 
@@ -486,13 +565,12 @@ async function saveGadgetModeConfig() {
 
 async function saveGadgetConfig() {
     var content = document.getElementById("gadget-editor").value;
-    var b64 = utf8ToBase64(content);
-    var r = await exec("echo '" + b64 + "' | base64 -d > " + GADGET_CONFIG_PATH + " && chmod 644 " + GADGET_CONFIG_PATH);
-    if (r.errno === 0) {
+    var ok = await writeTextFile(GADGET_CONFIG_PATH, content, "644");
+    if (ok) {
         ksu.toast(t("toastGadgetSaved"));
         loadGadgetConfig();
     } else {
-        ksu.toast("Failed: " + r.stderr);
+        ksu.toast("⚠️ Gadget 配置保存失败");
     }
 }
 
@@ -803,7 +881,7 @@ window.onload = function () {
     updateStaticI18n();
 
     document.getElementById("btn-add").onclick = showAppList;
-    document.getElementById("btn-save").onclick = saveConfig;
+    document.getElementById("btn-save").onclick = saveAllConfig;
     document.getElementById("btn-reload").onclick = function () { loadConfig(); loadGadgetConfig(); };
     document.getElementById("btn-save-gadget").onclick = saveGadgetConfig;
     document.getElementById("btn-copy-adb").onclick = copyAdbCommand;
@@ -821,6 +899,8 @@ window.onload = function () {
         if (event.target === helpModal) closeHelpModal();
     };
 
-    // Fast Startup: Only load configs, no blocking dumpsys loop
+    // Fast Startup: Load configurations instantly
+    loadConfig();
+    loadGadgetConfig();
 };
 
