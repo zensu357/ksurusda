@@ -14,8 +14,8 @@ let currentLang = localStorage.getItem("ksufrida_lang") || (navigator.language &
 // ── i18n Dictionary ──────────────────────────────────────────────────────────
 const i18n = {
     zh: {
-        appTitle: "KsuRusda 注入管理 (Anti-detection)",
-        appSubtitle: "Zygisk + Rusda (去特征 Frida) 动态注入隐蔽框架",
+        appTitle: "ksurusda",
+        appSubtitle: "zygisk+rusda",
         targetsTitle: "注入目标列表",
         btnAddTarget: "添加应用",
         btnHelp: "📖 详解",
@@ -68,8 +68,8 @@ const i18n = {
         toastAlreadyAdded: "⚠️ 该应用已在目标列表中"
     },
     en: {
-        appTitle: "KsuRusda Manager (Anti-detection)",
-        appSubtitle: "Dynamic Rusda (Anti-detection Frida) Injection via Zygisk",
+        appTitle: "ksurusda",
+        appSubtitle: "zygisk+rusda",
         targetsTitle: "Injection Targets",
         btnAddTarget: "Add App",
         btnHelp: "📖 Help",
