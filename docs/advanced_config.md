@@ -45,7 +45,7 @@ Example config
 The config contains an array of targets. A target contains the configuration for one application
 you want to inject with frida.
 
-In case things are not working as expected, check `adb logcat -s KsuFrida` to see if an error is logged.
+In case things are not working as expected, check `adb logcat -s KsuRusda` to see if an error is logged.
 
 ## Target configuration
 

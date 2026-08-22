@@ -9,7 +9,7 @@ let appsLoaded = false;
 let isFetchingApps = false;
 let callbackId = 0;
 let currentGadgetMode = "listen";
-let currentLang = localStorage.getItem("ksufrida_lang") || (navigator.language && navigator.language.startsWith("zh") ? "zh" : "en");
+let currentLang = localStorage.getItem("ksurusda_lang") || (navigator.language && navigator.language.startsWith("zh") ? "zh" : "en");
 
 // ── i18n Dictionary ──────────────────────────────────────────────────────────
 const i18n = {
@@ -145,7 +145,7 @@ function updateStaticI18n() {
 
 function toggleLanguage() {
     currentLang = currentLang === "zh" ? "en" : "zh";
-    localStorage.setItem("ksufrida_lang", currentLang);
+    localStorage.setItem("ksurusda_lang", currentLang);
     updateStaticI18n();
     renderTargets();
 }
@@ -226,7 +226,7 @@ function renderHelpContent() {
                     <h4 style="font-size:13px; color:var(--primary); margin-bottom:6px;">🛠️ 排查与调试日志</h4>
                     <div style="font-size:12px; color:var(--text-muted);">
                         如遇到未注入或连接失败，可在电脑终端查看模块实时输出日志：
-                        <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuFrida</pre>
+                        <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuRusda</pre>
                     </div>
                 </div>
 
@@ -246,9 +246,9 @@ function renderHelpContent() {
         el.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:14px;">
                 <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px 12px;">
-                    <strong style="color:var(--primary);">💡 What is KsuFrida?</strong>
+                    <strong style="color:var(--primary);">💡 What is KsuRusda?</strong>
                     <div style="margin-top:4px; font-size:12px; color:var(--text-main);">
-                        KsuFrida is a <strong>Zygisk-based</strong> module designed to dynamically inject the Frida Gadget into target Android applications at the <code>postAppSpecialize</code> phase. It preserves APK signature integrity, bypasses ptrace checks, and utilizes <strong>memory remapping</strong> to hide Gadget traces from <code>/proc/self/maps</code>.
+                        KsuRusda is a <strong>Zygisk-based</strong> module designed to dynamically inject the anti-detection Rusda (patched Frida) into target Android applications at the <code>postAppSpecialize</code> phase. It preserves APK signature integrity, bypasses ptrace checks, and utilizes <strong>memory remapping</strong> to hide Gadget traces from <code>/proc/self/maps</code>.
                     </div>
                 </div>
 
@@ -305,7 +305,7 @@ function renderHelpContent() {
                     <h4 style="font-size:13px; color:var(--primary); margin-bottom:6px;">🛠️ Troubleshooting & Logs</h4>
                     <div style="font-size:12px; color:var(--text-muted);">
                         View real-time injection and module logs via:
-                        <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuFrida</pre>
+                        <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuRusda</pre>
                     </div>
                 </div>
 
@@ -541,7 +541,7 @@ async function loadScriptFile() {
     if (r.errno === 0 && r.stdout.trim().length > 0) {
         scriptEditor.value = r.stdout;
     } else {
-        scriptEditor.value = `// KsuFrida 离线免联网 Hook 脚本模板\nJava.perform(function () {\n    console.log("[*] KsuFrida offline script loaded successfully!");\n});\n`;
+        scriptEditor.value = `// KsuRusda 离线免联网 Hook 脚本模板\nJava.perform(function () {\n    console.log("[*] KsuRusda offline script loaded successfully!");\n});\n`;
     }
 }
 

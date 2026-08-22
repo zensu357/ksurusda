@@ -1,3 +1,11 @@
+# v2.0.1
+- Integrated taisuii/rusda anti-detection Frida core (v17.15.0) to eliminate thread and RPC detection traces
+- Rebranded and streamlined WebUI with responsive mobile layout and ultra-fast lazy loading
+- Added offline script injection mode for applications without internet permissions
+- Implemented atomic safe config persistence and instant target toggling
+- Upgraded build system with modern Java 17, Android NDK 25 LTS toolchain, and CI automation
+- Standardized project licensing, derivative documentation, and comprehensive upstream credits
+
 # v1.9.20
 - Fixed WebUI-saved config file permissions so the target app can read them (thanks @limbang, #7)
 

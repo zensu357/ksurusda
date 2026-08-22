@@ -27,7 +27,7 @@ adb shell su -c 'echo com.example.package,20000 > /data/local/tmp/libsec/target_
 ```
 would inject the gadget after a delay of 20 seconds.
 
-You get a 10 seconds countdown to injection in the KsuFrida logs `adb logcat -s KsuFrida`.
+You get a 10 seconds countdown to injection in the KsuRusda logs `adb logcat -s KsuRusda`.
 This can help if you want to time the injection with app interactions.
 
 **Gadget version and config**
