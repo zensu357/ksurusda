@@ -13,26 +13,26 @@
 #include "inject.h"
 #include "log.h"
 
-static std::string child_gating_mode;
+static char child_gating_mode[32] = {0};
 static std::vector<std::string> injected_libraries;
 
 static pid_t (*orig_fork)() = nullptr;
 static pid_t (*orig_vfork)() = nullptr;
 
 static void handle_child_action(const std::string &logContext) {
-    if (child_gating_mode == "kill") {
+    if (strcmp(child_gating_mode, "kill") == 0) {
         LOGI("%skilling child process", logContext.c_str());
         _exit(0);
     }
 
-    if (child_gating_mode == "freeze") {
+    if (strcmp(child_gating_mode, "freeze") == 0) {
         LOGI("%sfreezing child process", logContext.c_str());
         while (true) {
             pause();
         }
     }
 
-    if (child_gating_mode == "inject") {
+    if (strcmp(child_gating_mode, "inject") == 0) {
         for (const auto &lib_path : injected_libraries) {
             LOGI("%sInjecting %s", logContext.c_str(), lib_path.c_str());
             inject_lib(lib_path, logContext);
@@ -40,7 +40,7 @@ static void handle_child_action(const std::string &logContext) {
         return;
     }
 
-    LOGW("%sunknown child_gating_mode: %s", logContext.c_str(), child_gating_mode.c_str());
+    LOGW("%sunknown child_gating_mode: %s", logContext.c_str(), child_gating_mode);
 }
 
 static pid_t fork_replacement() {
@@ -72,7 +72,7 @@ static pid_t vfork_replacement() {
     LOGI("[child_gating][pid %d] intercepted vfork", parent_pid);
 
     // If freeze or kill, we can execute it via standard fork or orig_vfork
-    if (child_gating_mode == "kill" || child_gating_mode == "freeze") {
+    if (strcmp(child_gating_mode, "kill") == 0 || strcmp(child_gating_mode, "freeze") == 0) {
         pid_t child_pid = orig_fork ? orig_fork() : (orig_vfork ? orig_vfork() : -1);
         if (child_pid != 0) {
             return child_pid;
@@ -103,10 +103,10 @@ static pid_t vfork_replacement() {
 }
 
 void enable_child_gating(child_gating_config const &cfg) {
-    child_gating_mode = cfg.mode;
+    snprintf(child_gating_mode, sizeof(child_gating_mode), "%s", cfg.mode.c_str());
     injected_libraries = cfg.injected_libraries;
 
-    LOGI("[child_gating] Enabling child gating (mode: %s)", child_gating_mode.c_str());
+    LOGI("[child_gating] Enabling child gating (mode: %s)", child_gating_mode);
 
     void *forkAddr = dlsym(RTLD_DEFAULT, "fork");
     if (!forkAddr) {

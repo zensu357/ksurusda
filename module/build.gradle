@@ -43,7 +43,7 @@ task downloadFrida(type: Download) {
 android {
     namespace = "zygisk.frida"
     compileSdkVersion rootProject.ext.targetSdkVersion
-    ndkVersion '30.0.14904198'
+    ndkVersion '25.2.9519653'
 
     flavorDimensions += "api"
 

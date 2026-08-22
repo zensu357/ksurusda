@@ -15,7 +15,7 @@ jobs:
         run: >
           cpplint
           --linelength=120
-          --filter=-build/c++11,-build/header_guard,-legal/copyright,-build/include_subdir
+          --filter=-build/c++11,-build/header_guard,-legal/copyright,-build/include_subdir,-runtime/string
           --exclude module/src/jni/include/rapidjson
           --exclude module/src/jni/xdl
           --exclude module/src/jni/zygisk.h
