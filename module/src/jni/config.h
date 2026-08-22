@@ -22,6 +22,5 @@ struct target_config{
 };
 
 std::optional<target_config> load_config(std::string const& module_dir, std::string const& app_name);
-std::optional<target_config> parse_advanced_config(std::string const& config, std::string const& app_name);
 
 #endif  // ZYGISKFRIDA_CONFIG_H

@@ -4,8 +4,8 @@ ext {
     moduleName = "ksurusda"
     moduleAuthor = "zensu357"
     moduleDescription = "Rusda (Anti-detection Frida) gadget injection module for KernelSU/Magisk via Zygisk"
-    moduleVersion = "v2.0.1"
-    moduleVersionCode = 201
+    moduleVersion = "v2.0.2"
+    moduleVersionCode = 202
 
     // Rusda (Patched Frida: https://github.com/taisuii/rusda)
     rusdaVersion = "17.15.0"

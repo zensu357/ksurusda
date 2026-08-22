@@ -7,6 +7,8 @@ let allApps = [];
 let appLabels = {};
 let appsLoaded = false;
 let isFetchingApps = false;
+let includeSystemApps = false;
+let includeDualApps = false;
 let callbackId = 0;
 let currentGadgetMode = "listen";
 let currentLang = localStorage.getItem("ksurusda_lang") || (navigator.language && navigator.language.startsWith("zh") ? "zh" : "en");
@@ -19,6 +21,16 @@ const i18n = {
         targetsTitle: "注入目标列表",
         btnAddTarget: "添加应用",
         btnHelp: "📖 详解",
+        btnLogcat: "📜 日志",
+        logcatTitle: "📜 实时运行日志 (Logcat)",
+        chkShowSys: "包含系统应用",
+        chkShowDual: "包含分身/多用户",
+        btnRefreshLog: "🔄 刷新",
+        btnClearLog: "🗑️ 清屏",
+        btnCopyLog: "📋 复制",
+        toastLogCopied: "📋 日志已复制到剪贴板",
+        toastLogCleared: "🗑️ 日志已清空",
+        logEmpty: "暂无 KsuRusda 相关运行日志",
         helpModalTitle: "📖 KsuRusda (去特征版) 功能详解与使用指南",
         gadgetConfigTitle: "Rusda Gadget 交互模式",
         tabListen: "🌐 联网监听模式",
@@ -41,7 +53,7 @@ const i18n = {
         searchPlaceholder: "搜索应用名称或包名...",
         loadingApps: "正在快速加载已安装应用...",
         noTargets: "暂无配置的注入目标，请点击右上角「+ 添加应用」开始",
-        noAppsFound: "未找到匹配的第三方应用",
+        noAppsFound: "未找到匹配的应用",
         statusEnabled: "已启用",
         statusDisabled: "已停用",
         ksieLabel: "内核隐蔽 (KSIE)",
@@ -73,6 +85,16 @@ const i18n = {
         targetsTitle: "Injection Targets",
         btnAddTarget: "Add App",
         btnHelp: "📖 Help",
+        btnLogcat: "📜 Logs",
+        logcatTitle: "📜 Live Logcat Viewer",
+        chkShowSys: "Show System Apps",
+        chkShowDual: "Show Dual/Multi-User",
+        btnRefreshLog: "🔄 Refresh",
+        btnClearLog: "🗑️ Clear",
+        btnCopyLog: "📋 Copy",
+        toastLogCopied: "📋 Logs copied to clipboard",
+        toastLogCleared: "🗑️ Logs cleared",
+        logEmpty: "No KsuRusda logs captured yet",
         helpModalTitle: "📖 KsuRusda Documentation & Guide",
         gadgetConfigTitle: "Rusda Gadget Interaction Mode",
         tabListen: "🌐 Online Listen Mode",
@@ -645,13 +667,41 @@ async function copyAdbCommand() {
     }
 }
 
-// ── App list (Lazy, Instant & Optimized) ─────────────────────────────────────
+// ── App list (Lazy, Instant & Optimized with System & Dual App Support) ──────
+function toggleSystemApps(checked) {
+    includeSystemApps = checked;
+    appsLoaded = false;
+    var list = document.getElementById("app-list");
+    if (list) {
+        list.innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><div style="font-size:12px;color:var(--text-muted);">' + t("loadingApps") + '</div></div>';
+    }
+    fetchApps();
+}
+
+function toggleDualApps(checked) {
+    includeDualApps = checked;
+    appsLoaded = false;
+    var list = document.getElementById("app-list");
+    if (list) {
+        list.innerHTML = '<div style="text-align:center;padding:24px 0;"><div class="spinner"></div><div style="font-size:12px;color:var(--text-muted);">' + t("loadingApps") + '</div></div>';
+    }
+    fetchApps();
+}
+
 async function fetchApps() {
-    if (appsLoaded || isFetchingApps) return;
+    if (isFetchingApps) return;
     isFetchingApps = true;
 
-    // 毫秒级极速获取所有第三方安装包
-    var r = await exec("pm list packages -3 | sed 's/package://' | sort");
+    var cmd = "pm list packages -3 | sed 's/package://' | sort -u";
+    if (includeSystemApps && includeDualApps) {
+        cmd = "(pm list packages --user all 2>/dev/null || pm list packages) | sed 's/package://' | sort -u";
+    } else if (includeSystemApps) {
+        cmd = "pm list packages | sed 's/package://' | sort -u";
+    } else if (includeDualApps) {
+        cmd = "(pm list packages -3 --user all 2>/dev/null || pm list packages -3) | sed 's/package://' | sort -u";
+    }
+
+    var r = await exec(cmd);
     if (r.errno === 0 && r.stdout.trim().length > 0) {
         allApps = r.stdout.split("\n")
             .map(function (l) { return l.trim(); })
@@ -882,6 +932,65 @@ function closeHelpModal() {
     document.getElementById("help-modal").style.display = "none";
 }
 
+// ── Logcat Live Viewer ───────────────────────────────────────────────────────
+function showLogcatModal() {
+    document.getElementById("logcat-modal").style.display = "flex";
+    fetchLogcat();
+}
+
+function closeLogcatModal() {
+    document.getElementById("logcat-modal").style.display = "none";
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function fetchLogcat() {
+    var el = document.getElementById("logcat-content");
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px 0;"><div class="spinner"></div><div>Loading logs...</div></div>';
+
+    var r = await exec("logcat -d -s KsuRusda:V | tail -n 120");
+    if (r.errno === 0 && r.stdout.trim().length > 0) {
+        var lines = r.stdout.trim().split("\n");
+        var colored = lines.map(function (line) {
+            var escaped = escapeHtml(line);
+            if (line.indexOf(" E ") !== -1 || line.indexOf("Failed") !== -1 || line.indexOf("error") !== -1) {
+                return '<span style="color:#fb7185;">' + escaped + '</span>';
+            } else if (line.indexOf(" W ") !== -1 || line.indexOf("warning") !== -1) {
+                return '<span style="color:#fbbf24;">' + escaped + '</span>';
+            } else if (line.indexOf("Injected") !== -1 || line.indexOf("Remap completed") !== -1 || line.indexOf("successfully") !== -1) {
+                return '<span style="color:#34d399; font-weight:600;">' + escaped + '</span>';
+            } else if (line.indexOf("[child_gating]") !== -1) {
+                return '<span style="color:#a78bfa;">' + escaped + '</span>';
+            }
+            return '<span style="color:#94a3b8;">' + escaped + '</span>';
+        }).join("\n");
+        el.innerHTML = colored;
+        el.scrollTop = el.scrollHeight;
+    } else {
+        el.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:30px 0;">' + t("logEmpty") + '</div>';
+    }
+}
+
+async function clearLogcat() {
+    await exec("logcat -c");
+    ksu.toast(t("toastLogCleared"));
+    fetchLogcat();
+}
+
+async function copyLogcat() {
+    var el = document.getElementById("logcat-content");
+    var text = el ? el.innerText : "";
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        ksu.toast(t("toastLogCopied"));
+    } else {
+        prompt("Copy Logcat:", text);
+    }
+}
+
 function renderAppList() {
     var list = document.getElementById("app-list");
     var search = document.getElementById("app-search").value.toLowerCase();
@@ -936,14 +1045,21 @@ window.onload = function () {
     document.getElementById("btn-lang-toggle").onclick = toggleLanguage;
     document.getElementById("btn-help").onclick = showHelpModal;
     document.getElementById("btn-close-help").onclick = closeHelpModal;
+    document.getElementById("btn-logcat").onclick = showLogcatModal;
+    document.getElementById("btn-close-logcat").onclick = closeLogcatModal;
+    document.getElementById("btn-refresh-logcat").onclick = fetchLogcat;
+    document.getElementById("btn-clear-logcat").onclick = clearLogcat;
+    document.getElementById("btn-copy-logcat").onclick = copyLogcat;
     document.getElementById("app-search").oninput = renderAppList;
 
     // Click outside to close modals
     window.onclick = function (event) {
         const appModal = document.getElementById("app-modal");
         const helpModal = document.getElementById("help-modal");
+        const logcatModal = document.getElementById("logcat-modal");
         if (event.target === appModal) closeAppModal();
         if (event.target === helpModal) closeHelpModal();
+        if (event.target === logcatModal) closeLogcatModal();
     };
 
     // Fast Startup: Load configurations instantly

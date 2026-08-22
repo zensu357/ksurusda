@@ -2,6 +2,7 @@
 
 #include <link.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include <cerrno>
 #include <cstring>
 #include <cinttypes>
@@ -79,35 +80,44 @@ void remap_lib(std::string lib_path) {
 
     LOGI("Remapping %s (%zu segments)", lib_name.c_str(), maps.size());
 
-    for (const auto &info : maps) {
-        void *address = reinterpret_cast<void *>(info.start);
-        size_t size = info.end - info.start;
+    long page_size_conf = sysconf(_SC_PAGESIZE);
+    size_t page_size = (page_size_conf > 0) ? static_cast<size_t>(page_size_conf) : 4096;
 
-        void *map = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    for (const auto &info : maps) {
+        if (info.end <= info.start) continue;
+
+        uintptr_t aligned_start = info.start & ~(page_size - 1);
+        uintptr_t aligned_end = (info.end + page_size - 1) & ~(page_size - 1);
+        size_t aligned_size = aligned_end - aligned_start;
+
+        void *address = reinterpret_cast<void *>(aligned_start);
+
+        void *map = mmap(nullptr, aligned_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         if (map == MAP_FAILED) {
-            LOGE("Failed to allocate memory for %s: %s", info.path.c_str(), strerror(errno));
+            LOGE("Failed to allocate anonymous memory for %s: %s", info.path.c_str(), strerror(errno));
             continue;
         }
 
         if ((info.perms & PROT_READ) == 0) {
             LOGI("Temporarily enabling read permission: %s", info.path.c_str());
-            mprotect(address, size, PROT_READ);
+            mprotect(address, aligned_size, PROT_READ);
         }
 
         /* Copy the in-memory data to new virtual location via memmove */
-        std::memmove(map, address, size);
+        std::memmove(map, address, aligned_size);
 
         /* Commit new anonymous memory to original virtual address via mremap */
-        void *remapped = mremap(map, size, size, MREMAP_MAYMOVE | MREMAP_FIXED, reinterpret_cast<void *>(info.start));
+        void *remapped = mremap(map, aligned_size, aligned_size, MREMAP_MAYMOVE | MREMAP_FIXED, address);
         if (remapped == MAP_FAILED) {
             LOGE("Failed to mremap %s: %s", info.path.c_str(), strerror(errno));
-            munmap(map, size);
+            munmap(map, aligned_size);
             continue;
         }
 
-        /* Re-apply original memory protections */
-        mprotect(reinterpret_cast<void *>(info.start), size, info.perms);
-        LOGI("Remapped segment [%" PRIxPTR "-%" PRIxPTR "] (%s)", info.start, info.end, info.path.c_str());
+        /* Re-apply original memory protections (or PROT_READ if none were set) */
+        int final_perms = (info.perms != 0) ? info.perms : PROT_READ;
+        mprotect(address, aligned_size, final_perms);
+        LOGI("Remapped segment [%" PRIxPTR "-%" PRIxPTR "] (%s)", aligned_start, aligned_end, info.path.c_str());
     }
 
     LOGI("Remap completed for %s", lib_name.c_str());

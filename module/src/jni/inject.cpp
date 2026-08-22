@@ -99,26 +99,41 @@ static bool copy_file(const char *src, const char *dst) {
     return true;
 }
 
-static std::string get_app_data_dir(const std::string &app_name) {
+static std::string get_app_code_cache_dir(const std::string &app_name) {
     uid_t uid = getuid();
     int user_id = static_cast<int>(uid / 100000);
 
-    std::string user_dir = "/data/user/" + std::to_string(user_id) + "/" + app_name;
+    // List of candidate directories to search in priority order
+    std::vector<std::string> candidate_bases = {
+        "/data/user/" + std::to_string(user_id) + "/" + app_name,
+        "/data/user_de/" + std::to_string(user_id) + "/" + app_name,
+        "/data/data/" + app_name,
+        "/data/user/0/" + app_name,
+        "/data/user_de/0/" + app_name
+    };
+
     struct stat st;
-    if (stat(user_dir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-        return user_dir;
+    for (const auto &base : candidate_bases) {
+        std::string code_cache = base + "/code_cache";
+        if (stat(code_cache.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+            return code_cache;
+        }
+        if (stat(base.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+            if (mkdir(code_cache.c_str(), 0700) == 0 || errno == EEXIST) {
+                return code_cache;
+            }
+        }
     }
 
-    std::string data_dir = "/data/data/" + app_name;
-    if (stat(data_dir.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-        return data_dir;
-    }
-
-    return user_dir;
+    // Default fallback to user directory code_cache
+    return candidate_bases[0] + "/code_cache";
 }
 
 static std::string stage_gadget(const std::string &app_name, const std::string &src_lib_path) {
-    std::string stage_dir = get_app_data_dir(app_name) + "/.cache";
+    std::string base_dir = get_app_code_cache_dir(app_name);
+    mkdir(base_dir.c_str(), 0700);
+
+    std::string stage_dir = base_dir + "/.kr_stage";
     mkdir(stage_dir.c_str(), 0700);
 
     size_t slash = src_lib_path.rfind('/');
@@ -152,7 +167,11 @@ static void unlink_staged(const std::string &staged_lib_path) {
 
     size_t slash = staged_lib_path.rfind('/');
     if (slash != std::string::npos) {
-        rmdir(staged_lib_path.substr(0, slash).c_str());
+        std::string parent_dir = staged_lib_path.substr(0, slash);
+        // Only remove the isolated .kr_stage directory, never the main code_cache
+        if (parent_dir.find(".kr_stage") != std::string::npos) {
+            rmdir(parent_dir.c_str());
+        }
     }
 
     LOGI("Staged files removed");
@@ -207,6 +226,11 @@ static void inject_libs(target_config const &cfg, pid_t pid) {
 
     // Allow Frida's JS engine to fully initialize before post-init cleanup.
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // Remap Zygisk module itself from /proc/self/maps to erase loader traces
+    LOGI("Hiding Zygisk module self references...");
+    remap_lib("libzygiskfrida.so");
+    remap_lib("zygiskfrida");
 }
 
 bool check_and_inject(std::string const &app_name) {

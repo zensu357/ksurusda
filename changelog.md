@@ -1,3 +1,8 @@
+# v2.0.2
+- Unified system and JNI logging tag to KsuRusda
+- Cleaned up all obsolete workflows and project metadata
+- Optimized WebUI language cache storage key
+
 # v2.0.1
 - Integrated taisuii/rusda anti-detection Frida core (v17.15.0) to eliminate thread and RPC detection traces
 - Rebranded and streamlined WebUI with responsive mobile layout and ultra-fast lazy loading
