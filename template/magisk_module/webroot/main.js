@@ -229,6 +229,17 @@ function renderHelpContent() {
                         <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuFrida</pre>
                     </div>
                 </div>
+
+                <div style="border-top:1px solid var(--border); padding-top:10px; margin-top:4px;">
+                    <h4 style="font-size:12px; color:var(--text-sub); margin-bottom:4px;">💖 致谢与开源鸣谢 (Credits)</h4>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+                        • <strong>lico-n</strong> — ZygiskFrida 原作者<br>
+                        • <strong>gorkemgun</strong> — KsuFrida 模块作者<br>
+                        • <strong>electrondefuser</strong> — Library Remapper & Child Gating<br>
+                        • <strong>taisuii</strong> — Rusda (Anti-detection Frida Core)<br>
+                        • <strong>xDL & Zygisk-Il2CppDumper</strong>
+                    </div>
+                </div>
             </div>
         `;
     } else {
@@ -295,6 +306,17 @@ function renderHelpContent() {
                     <div style="font-size:12px; color:var(--text-muted);">
                         View real-time injection and module logs via:
                         <pre style="background:#090d16; padding:6px 8px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); color:#10b981; font-size:11px;">adb logcat -s KsuFrida</pre>
+                    </div>
+                </div>
+
+                <div style="border-top:1px solid var(--border); padding-top:10px; margin-top:4px;">
+                    <h4 style="font-size:12px; color:var(--text-sub); margin-bottom:4px;">💖 Credits & Acknowledgments</h4>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+                        • <strong>lico-n</strong> — Original author of ZygiskFrida<br>
+                        • <strong>gorkemgun</strong> — KsuFrida author<br>
+                        • <strong>electrondefuser</strong> — Library Remapper & Child Gating<br>
+                        • <strong>taisuii</strong> — Rusda (Anti-detection Frida Core)<br>
+                        • <strong>xDL & Zygisk-Il2CppDumper</strong>
                     </div>
                 </div>
             </div>

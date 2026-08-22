@@ -2,8 +2,8 @@ ext {
     // Magisk Module
     magiskModuleId = "ksurusda"
     moduleName = "ksurusda"
-    moduleAuthor = "taisuii & gorkemgun"
-    moduleDescription = "Rusda (Anti-detection Frida) gadget injection module for KernelSU via Zygisk"
+    moduleAuthor = "taisuii, gorkemgun & Contributors"
+    moduleDescription = "Rusda (Anti-detection Frida) gadget injection module for KernelSU/Magisk via Zygisk"
     moduleVersion = "v1.9.31-rusda"
     moduleVersionCode = 42
 
