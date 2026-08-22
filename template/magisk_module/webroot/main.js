@@ -14,25 +14,25 @@ let currentLang = localStorage.getItem("ksufrida_lang") || (navigator.language &
 // ── i18n Dictionary ──────────────────────────────────────────────────────────
 const i18n = {
     zh: {
-        appTitle: "KsuFrida 注入管理",
-        appSubtitle: "Zygisk Frida Gadget 动态注入与隐蔽框架",
+        appTitle: "KsuRusda 注入管理 (Anti-detection)",
+        appSubtitle: "Zygisk + Rusda (去特征 Frida) 动态注入隐蔽框架",
         targetsTitle: "注入目标列表",
         btnAddTarget: "添加应用",
         btnHelp: "📖 详解",
-        helpModalTitle: "📖 KsuFrida 功能详解与使用指南",
-        gadgetConfigTitle: "Frida Gadget 交互模式",
+        helpModalTitle: "📖 KsuRusda (去特征版) 功能详解与使用指南",
+        gadgetConfigTitle: "Rusda Gadget 交互模式",
         tabListen: "🌐 联网监听模式",
         tabScript: "⚡ 离线免联网脚本模式",
         tabRaw: "📝 高级 JSON",
-        listenModeDesc: "适用于拥有网络权限的常规应用。Gadget 在指定端口启动 TCP 监听，供电脑端 Frida 连接。",
+        listenModeDesc: "适用于常规应用。Rusda 在指定端口启动 TCP 监听，供电脑端 Frida 客户端直接连接。",
         lblPort: "监听端口 (Port)",
         lblAddress: "绑定地址 (Address)",
         btnCopyAdb: "📋 复制 ADB 转发",
         btnApplyGadget: "应用并保存",
         scriptModeNoticeTitle: "🛡️ 专为无网络权限/离线应用设计",
-        scriptModeNoticeDesc: "应用无需任何网络权限或开放端口，Gadget 加载时直接在进程内运行指定的本地 JS 脚本，修改脚本后支持自动热重载。",
+        scriptModeNoticeDesc: "应用无需任何网络权限或开放端口，Rusda 加载时直接在进程内运行指定的本地 JS 脚本，修改脚本后支持自动热重载。",
         lblScriptPath: "本地脚本绝对路径",
-        lblScriptContent: "Frida JS 脚本代码 (直接在手机上编写)",
+        lblScriptContent: "Frida / Rusda JS 脚本代码 (直接在手机上编写)",
         btnSaveScript: "💾 仅存脚本",
         btnSaveGadget: "保存原始 JSON",
         btnSaveAll: "💾 保存全部配置",
@@ -47,7 +47,7 @@ const i18n = {
         ksieLabel: "内核隐蔽 (KSIE)",
         ksieDesc: "启用内核级注入痕迹抹除 (需 KernelSU 特性支持)",
         delayLabel: "启动延时 (毫秒)",
-        delayDesc: "延后加载 Gadget，有效规避 App 启动早期的安全检测",
+        delayDesc: "延后加载 Rusda，有效规避 App 启动早期的安全检测",
         libsLabel: "注入动态库路径",
         libsDesc: "每行一个 SO 绝对路径，按先后顺序加载",
         childGatingLabel: "子进程拦截 (Child Gating)",
@@ -60,7 +60,7 @@ const i18n = {
         btnDelete: "移除",
         toggleDetails: "高级选项",
         toastConfigSaved: "✅ 配置已安全保存",
-        toastGadgetSaved: "✅ Gadget 模式配置已生效",
+        toastGadgetSaved: "✅ Rusda 模式配置已生效",
         toastScriptSaved: "✅ JS 脚本已保存并设置读取权限",
         toastRestarting: "🔄 正在重启应用...",
         toastRestarted: "✅ 应用已重启: ",
@@ -68,17 +68,17 @@ const i18n = {
         toastAlreadyAdded: "⚠️ 该应用已在目标列表中"
     },
     en: {
-        appTitle: "KsuFrida Manager",
-        appSubtitle: "Dynamic Frida Gadget Injection via Zygisk",
+        appTitle: "KsuRusda Manager (Anti-detection)",
+        appSubtitle: "Dynamic Rusda (Anti-detection Frida) Injection via Zygisk",
         targetsTitle: "Injection Targets",
         btnAddTarget: "Add App",
         btnHelp: "📖 Help",
-        helpModalTitle: "📖 KsuFrida Documentation & Guide",
-        gadgetConfigTitle: "Frida Gadget Interaction Mode",
+        helpModalTitle: "📖 KsuRusda Documentation & Guide",
+        gadgetConfigTitle: "Rusda Gadget Interaction Mode",
         tabListen: "🌐 Online Listen Mode",
         tabScript: "⚡ Offline Script Mode",
         tabRaw: "📝 Raw JSON",
-        listenModeDesc: "For apps with internet permissions. Gadget opens a TCP port waiting for PC Frida client to connect.",
+        listenModeDesc: "For apps with internet permissions. Rusda opens a TCP port waiting for PC Frida client to connect.",
         lblPort: "Listen Port",
         lblAddress: "Bind Address",
         btnCopyAdb: "📋 Copy ADB Forward",
@@ -86,7 +86,7 @@ const i18n = {
         scriptModeNoticeTitle: "🛡️ Designed for No-Internet / Offline Apps",
         scriptModeNoticeDesc: "Requires zero network permissions or open ports. Directly executes your local JS script on load with live hot-reload support.",
         lblScriptPath: "Absolute Script Path",
-        lblScriptContent: "Frida JS Script (Edit directly on phone)",
+        lblScriptContent: "Rusda JS Script (Edit directly on phone)",
         btnSaveScript: "💾 Save Script",
         btnSaveGadget: "Save Raw JSON",
         btnSaveAll: "💾 Save All Settings",
@@ -114,7 +114,7 @@ const i18n = {
         btnDelete: "Remove",
         toggleDetails: "Advanced Options",
         toastConfigSaved: "✅ Config saved successfully",
-        toastGadgetSaved: "✅ Gadget configuration applied",
+        toastGadgetSaved: "✅ Rusda configuration applied",
         toastScriptSaved: "✅ JS script saved with 0644 permissions",
         toastRestarting: "🔄 Restarting application...",
         toastRestarted: "✅ Application restarted: ",
@@ -159,17 +159,19 @@ function renderHelpContent() {
         el.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:14px;">
                 <div style="background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px 12px;">
-                    <strong style="color:var(--primary);">💡 什么是 KsuFrida？</strong>
+                    <strong style="color:var(--primary);">💡 什么是 KsuRusda？</strong>
                     <div style="margin-top:4px; font-size:12px; color:var(--text-main);">
-                        KsuFrida 是一个基于 <strong>Zygisk</strong> 的免 Root 检测 Frida 注入工具。在应用特化（<code>postAppSpecialize</code>）阶段将 Frida Gadget 动态注入目标进程，<strong>无需重打包 APK、不破坏应用签名、无需 ptrace 挂钩</strong>，并通过<strong>内存重映射（Remapping）</strong>技术抹除 maps 中的注入痕迹。
+                        KsuRusda 是基于 <strong>Zygisk</strong> 与 <strong>Rusda (taisuii/rusda 强去特征魔改版 Frida)</strong> 构建的免 Root / 反检测注入框架。<br>
+                        • <strong>底层注入隐蔽</strong>：Zygisk <code>postAppSpecialize</code> 动态注入，内存匿名重映射抹除 maps 路径，免 ptrace、免修改 APK；<br>
+                        • <strong>内核去特征 (Rusda)</strong>：源码级与二进制级抹除 <code>gmain</code>、<code>gdbus</code>、<code>gum-js-loop</code> 线程名、<code>frida:rpc</code> 标识、<code>memfd:frida-agent</code> 以及 <code>FridaScriptEngine</code> 等特征字符串，兼容官方 Frida 客户端连接。
                     </div>
                 </div>
 
                 <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px 12px;">
                     <strong style="color:var(--success);">⚡ 无网络权限应用应对方案 (免联网离线模式)</strong>
                     <div style="margin-top:4px; font-size:12px; color:var(--text-main);">
-                        如果目标 App 没有 <code>android.permission.INTERNET</code> 权限，传统 Frida Gadget 监听模式会因无法创建 Socket 报错崩溃。<br>
-                        <strong>解决方案</strong>：在 WebUI 中切换到 <strong>「⚡ 离线免联网脚本模式」</strong>，Gadget 将直接加载执行手机本地的 JS 脚本（如 <code>script.js</code>），完全无需网络权限！
+                        如果目标 App 没有 <code>android.permission.INTERNET</code> 权限，传统监听模式会因无法创建 Socket 报错崩溃。<br>
+                        <strong>解决方案</strong>：在 WebUI 中切换到 <strong>「⚡ 离线免联网脚本模式」</strong>，Rusda 将直接加载执行手机本地的 JS 脚本（如 <code>script.js</code>），完全无需网络权限！
                     </div>
                 </div>
 
