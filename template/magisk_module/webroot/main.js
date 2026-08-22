@@ -336,26 +336,24 @@ function exec(cmd) {
 
 // ── Atomic & Reliable File Writer ────────────────────────────────────────────
 async function writeTextFile(filePath, content, mode = "644") {
-    var b64 = utf8ToBase64(content);
     var dir = filePath.substring(0, filePath.lastIndexOf("/"));
+    var b64 = utf8ToBase64(content);
     var tmpFile = filePath + ".tmp_" + Date.now();
 
-    // 确保目录存在 -> 解码到临时文件 -> 验证非空 -> 原子重命名替换 -> 赋权
+    // 1. 标准兼容 Base64 管道解码 (杜绝任何 <<< 语法)
     var cmd = 
         "mkdir -p " + dir + " && " +
         "(echo '" + b64 + "' | base64 -d > \"" + tmpFile + "\" 2>/dev/null || " +
-        "echo '" + b64 + "' | busybox base64 -d > \"" + tmpFile + "\" 2>/dev/null || " +
-        "toybox base64 -d <<< '" + b64 + "' > \"" + tmpFile + "\" 2>/dev/null) && " +
+        "echo '" + b64 + "' | busybox base64 -d > \"" + tmpFile + "\" 2>/dev/null) && " +
         "[ -s \"" + tmpFile + "\" ] && mv -f \"" + tmpFile + "\" \"" + filePath + "\" && chmod " + mode + " \"" + filePath + "\"";
 
     var r = await exec(cmd);
-    if (r.errno !== 0) {
-        // Fallback: 如果 base64 均不可用，使用 printf 直接安全写入
-        var safe = content.replace(/\\/g, "\\\\").replace(/'/g, "'\\''");
-        var r2 = await exec("printf '%s' '" + safe + "' > \"" + filePath + "\" && chmod " + mode + " \"" + filePath + "\"");
-        return r2.errno === 0;
-    }
-    return true;
+    if (r.errno === 0) return true;
+
+    // 2. 如果 Base64 命令在当前系统不支持，尝试使用标准 Heredoc 原生写入
+    var heredocCmd = "mkdir -p " + dir + " && cat << 'KSU_EOF' > \"" + filePath + "\"\n" + content + "\nKSU_EOF\nchmod " + mode + " \"" + filePath + "\"";
+    var r2 = await exec(heredocCmd);
+    return r2.errno === 0;
 }
 
 // ── Config I/O ───────────────────────────────────────────────────────────────
@@ -364,6 +362,7 @@ async function loadConfig() {
     if (r.errno === 0 && r.stdout.trim().length > 0) {
         try {
             config = JSON.parse(r.stdout);
+            if (!config.targets) config.targets = [];
             renderTargets();
             return;
         } catch (e) {
@@ -371,16 +370,21 @@ async function loadConfig() {
         }
     }
 
-    // 仅在主配置文件不存在且未加载过时尝试读取样例
-    var ex = await exec("cat /data/local/tmp/libsec/config.json.example");
-    if (ex.errno === 0 && ex.stdout.trim().length > 0) {
-        try { config = JSON.parse(ex.stdout); } catch (_) {}
+    // 仅在真实 config.json 完全不存在时才尝试读取样例
+    var chk = await exec("[ -f " + CONFIG_PATH + " ] && echo 1 || echo 0");
+    if (chk.stdout.trim() === "0") {
+        var ex = await exec("cat /data/local/tmp/libsec/config.json.example");
+        if (ex.errno === 0 && ex.stdout.trim().length > 0) {
+            try { config = JSON.parse(ex.stdout); } catch (_) {}
+        }
+    } else {
+        config = { targets: [] };
     }
     renderTargets();
 }
 
 // 收集并持久化所有配置 (目标配置 + Gadget 模式 + 脚本内容)
-async function saveAllConfig() {
+async function saveAllConfig(silent = false) {
     // 1. 同步 DOM 中所有目标卡片的最新输入值
     collectDOMTargetInputs();
 
@@ -408,13 +412,15 @@ async function saveAllConfig() {
     }
 
     if (ok1 && ok2 && ok3) {
-        ksu.toast(t("toastConfigSaved"));
+        if (!silent) {
+            ksu.toast(t("toastConfigSaved"));
+        }
         var status = document.getElementById("gadget-status");
         if (status) {
             status.className = "status-dot status-ok";
             status.textContent = "Ready";
         }
-    } else {
+    } else if (!silent) {
         ksu.toast("⚠️ 保存遇到问题，请检查存储权限");
     }
 }
@@ -754,6 +760,8 @@ function toggleCardBody(i) {
 // ── Data updates ─────────────────────────────────────────────────────────────
 function updateField(i, field, value) {
     var tItem = config.targets[i];
+    if (!tItem) return;
+
     switch (field) {
         case "enabled":
             tItem.enabled = value;
@@ -786,18 +794,30 @@ function updateField(i, field, value) {
                 .map(function (l) { return { path: l.trim() }; });
             break;
     }
+    // 修改任意开关或参数时后台自动保存落盘
+    saveAllConfig(true);
 }
 
 function removeTarget(i) {
     config.targets.splice(i, 1);
     renderTargets();
+    // 移除应用时后台自动保存落盘
+    saveAllConfig(true);
 }
 
 function addTarget(pkg) {
+    if (!config.targets) config.targets = [];
+
+    // 如果当前只有一个占位用的 example 项目，添加新应用时自动清除占位项
+    if (config.targets.length === 1 && config.targets[0].app_name === "com.example.package") {
+        config.targets = [];
+    }
+
     if (config.targets.some(function (tItem) { return tItem.app_name === pkg; })) {
         ksu.toast(t("toastAlreadyAdded"));
         return;
     }
+
     config.targets.push({
         app_name: pkg,
         enabled: true,
@@ -806,7 +826,10 @@ function addTarget(pkg) {
         injected_libraries: [{ path: "/data/local/tmp/libsec/libsecmon.so" }],
         child_gating: { enabled: false, mode: "freeze", injected_libraries: [] }
     });
+
     renderTargets();
+    // 添加应用后立即自动持久化保存到文件，杜绝用户未点击保存直接退出的数据丢失
+    saveAllConfig(false);
 }
 
 // ── Modals (Lazy Loaded) ─────────────────────────────────────────────────────
